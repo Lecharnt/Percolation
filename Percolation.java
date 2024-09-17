@@ -6,20 +6,20 @@ public class Percolation {
     int gridSize;
     int rowColSize;
     WeightedQuickUnionUF quickFind;
-    List<gridObject> openedObjects = new ArrayList<>();
-    List<gridObject> openedObjectsTop = new ArrayList<>();
-    List<gridObject> openedObjectsBottom = new ArrayList<>();
+    Set<Integer> openedSites = new HashSet<>();
 
     // creates n-by-n grid, with all sites initially blocked
     public Percolation(int n){
-        rowColSize= n;
-        gridSize = rowColSize*rowColSize;
-        quickFind = new WeightedQuickUnionUF(gridSize);
+        if(n>0){
+            rowColSize= n;
+            gridSize = rowColSize*rowColSize;
+            quickFind = new WeightedQuickUnionUF(gridSize);
+        }
     }
 
     // opens the site (row, col) if it is not open already
     public void open(int row, int col){
-        openedObjects.add(getIndex(row,col),new gridObject(row, col));
+        proveIndex(row, col);
         //is it a corner
         if(isOpen(row,col)){
             return;
@@ -48,7 +48,7 @@ public class Percolation {
         return openedObjects.contains(getIndex(row,col));
     }
     public int getIndex(int row, int col){
-        return ((row+1) * rowColSize-(rowColSize-col+1)-1);
+        return row * rowColSize + col;
     }
 
     // is the site (row, col) full?
@@ -71,11 +71,16 @@ public class Percolation {
         for(int i = 0;i < openedObjectsTop.size(); i++){
             for(int j = 0;j < openedObjectsBottom.size(); j++){
                 if (quickFind.connected(openedObjectsTop.indexOf(openedObjectsTop.get(i)), openedObjectsBottom.indexOf(openedObjectsBottom.get(j)))){
-                 return true;
+                    return true;
                 }
             }
         }
         return false;
+    }
+    private void proveIndex(int row, int col) {
+        if (row < 0 || row >= rowColSize || col < 0 || col >= rowColSize) {
+            throw new IllegalArgumentException("out of bounds");
+        }
     }
 
     // unit testing (required)
