@@ -1,60 +1,58 @@
 import edu.princeton.cs.algs4.WeightedQuickUnionUF;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Percolation {
-    int gridSize;
-    int rowColSize;
-    WeightedQuickUnionUF quickFind;
-    List<gridObject> openedObjects = new ArrayList<>();
-    List<gridObject> openedObjectsTop = new ArrayList<>();
-    List<gridObject> openedObjectsBottom = new ArrayList<>();
+    private final int gridSize;
+    private final int rowColSize;
+    private final WeightedQuickUnionUF quickFind;
+    private final Set<Integer> openedSites = new HashSet<>();
 
     // creates n-by-n grid, with all sites initially blocked
-    public Percolation(int n){
-        rowColSize= n;
-        gridSize = rowColSize*rowColSize;
-        quickFind = new WeightedQuickUnionUF(gridSize);
+    public Percolation(int n) {
+        if (n <= 0) {
+            throw new IllegalArgumentException("Grid size must be greater than 0");
+        }
+        this.rowColSize = n;
+        this.gridSize = n * n;
+        this.quickFind = new WeightedQuickUnionUF(gridSize);
     }
 
     // opens the site (row, col) if it is not open already
-    public void open(int row, int col){
-        openedObjects.add(getIndex(row,col),new gridObject(row, col));
-        //is it a corner
-        if(isOpen(row,col)){
-            return;
-        }
-        if(row == 0){
-            openedObjectsTop.add(getIndex(row,col), new gridObject(row, col));
-        }
-        if(row == gridSize-1){}
-        if(row>0 && isOpen(row-1,col)){
-            quickFind.union(getIndex(row,col),getIndex(row-1,col));
-        }
-        if (row<rowColSize && isOpen(row+1,col)){
-            quickFind.union(getIndex(row,col),getIndex(row+1,col));
-        }
-        if (col<rowColSize && isOpen(row,col+1)){
-            quickFind.union(getIndex(row,col),getIndex(row,col+1));
-        }
-        if (col>0 && isOpen(row,col-1)){
-            quickFind.union(getIndex(row,col),getIndex(row,col-1));
-        }
+    public void open(int row, int col) {
+        proveIndex(row, col);
+        int index = getIndex(row, col);
+        if (openedSites.contains(index)) return;
 
+        openedSites.add(index);
+
+        // Connect to adjacent open sites
+        if (row > 0 && isOpen(row - 1, col)) {
+            quickFind.union(index, getIndex(row - 1, col));
+        }
+        if (row < rowColSize - 1 && isOpen(row + 1, col)) {
+            quickFind.union(index, getIndex(row + 1, col));
+        }
+        if (col > 0 && isOpen(row, col - 1)) {
+            quickFind.union(index, getIndex(row, col - 1));
+        }
+        if (col < rowColSize - 1 && isOpen(row, col + 1)) {
+            quickFind.union(index, getIndex(row, col + 1));
+        }
     }
 
     // is the site (row, col) open?
-    public boolean isOpen(int row, int col){
-        return openedObjects.contains(getIndex(row,col));
-    }
-    public int getIndex(int row, int col){
-        return ((row+1) * rowColSize-(rowColSize-col+1)-1);
+    public boolean isOpen(int row, int col) {
+        proveIndex(row, col);
+        return openedSites.contains(getIndex(row, col));
     }
 
     // is the site (row, col) full?
-    public boolean isFull(int row, int col){
-        for(int i = 0;i < openedObjectsTop.size(); i++){
-            if(quickFind.connected(getIndex(row, col), openedObjectsTop.indexOf(openedObjectsTop.get(i) ))){
+    public boolean isFull(int row, int col) {
+        proveIndex(row, col);
+        int index = getIndex(row, col);
+        for (int openSite : openedSites) {
+            if (openSite < rowColSize && quickFind.connected(index, openSite)) {
                 return true;
             }
         }
@@ -62,16 +60,18 @@ public class Percolation {
     }
 
     // returns the number of open sites
-    public int numberOfOpenSites(){
-        return openedObjects.size();
+    public int numberOfOpenSites() {
+        return openedSites.size();
     }
 
     // does the system percolate?
-    public boolean percolates(){
-        for(int i = 0;i < openedObjectsTop.size(); i++){
-            for(int j = 0;j < openedObjectsBottom.size(); j++){
-                if (quickFind.connected(openedObjectsTop.indexOf(openedObjectsTop.get(i)), openedObjectsBottom.indexOf(openedObjectsBottom.get(j)))){
-                 return true;
+    public boolean percolates() {
+        for (int openSite : openedSites) {
+            if (openSite < rowColSize) {
+                for (int bottomSite : openedSites) {
+                    if (bottomSite >= (rowColSize * (rowColSize - 1)) && quickFind.connected(openSite, bottomSite)) {
+                        return true;
+                    }
                 }
             }
         }
@@ -79,6 +79,16 @@ public class Percolation {
     }
 
     // unit testing (required)
-    public static void main(String[] args){}
+    public static void main(String[] args) {
+    }
 
+    private int getIndex(int row, int col) {
+        return row * rowColSize + col;
+    }
+
+    private void proveIndex(int row, int col) {
+        if (row < 0 || row >= rowColSize || col < 0 || col >= rowColSize) {
+            throw new IllegalArgumentException("out of bounds");
+        }
+    }
 }
